@@ -1,0 +1,9 @@
+# Varian B — pipeline sesuai proposal (Bab 2.2.2–2.2.3, 3.2.4):
+#   segmentasi pyannote 3.0 + embedding ECAPA-TDNN + clustering AHC,
+#   dengan parameter default pyannote/speaker-diarization-3.1.
+name: baseline_b
+pipeline:
+  segmentation: pyannote/segmentation-3.0
+  embedding: speechbrain/spkrec-ecapa-voxceleb
+  clustering: AgglomerativeClustering
+params: {}

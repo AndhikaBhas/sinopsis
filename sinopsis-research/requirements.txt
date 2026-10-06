@@ -1,0 +1,18 @@
+# torch/torchaudio dipasang terpisah (pilih CPU atau CUDA), lihat README.
+pyannote.audio==4.0.1
+# lightning 2.6 memuat checkpoint dengan weights_only=True -> checkpoint pyannote gagal dimuat
+lightning<2.6
+pytorch-lightning<2.6
+torch==2.8.0
+torchaudio==2.8.0
+silero-vad
+speechbrain>=1.1  # ECAPA-TDNN; kompatibilitas dengan pyannote 4.0.1 ditangani di pipelines.py
+soundfile
+librosa
+jiwer
+pyyaml
+python-dotenv
+pytest
+flask
+python-docx
+# whisperx dipasang oleh scripts/night_download.sh

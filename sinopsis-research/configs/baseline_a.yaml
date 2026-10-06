@@ -1,0 +1,8 @@
+# Varian A — sistem Sinopsis saat ini.
+# Identik dengan bw-worker-diarizer/processors/diarizer.py:
+#   Pipeline.from_pretrained("pyannote/speaker-diarization-community-1")
+# tanpa perubahan parameter.
+name: baseline_a
+pipeline:
+  pretrained: pyannote/speaker-diarization-community-1
+params: {}

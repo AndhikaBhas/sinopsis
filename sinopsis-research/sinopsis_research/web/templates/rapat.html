@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ meta.judul }} · Notulensi Otomatis{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ meta.judul }} <span class="badge {{ meta.status }}">{{ meta.status|replace('_', ' ') }}</span></h1>
+  <p class="muted">
+    {{ meta.tanggal or meta.dibuat[:10] }}{% if meta.tempat %} · {{ meta.tempat }}{% endif %}
+    {% if meta.durasi_detik %} · {{ meta.durasi_detik|menit }} menit audio{% endif %}
+  </p>
+
+  {% for key, step in steps %}
+  <div class="step {{ step.status }}">
+    <span class="icon">{% if step.status == 'selesai' %}✓{% elif step.status == 'berjalan' %}●{% elif step.status == 'gagal' %}✗{% elif step.status == 'dilewati' %}–{% else %}○{% endif %}</span>
+    <span>{{ step.label }}{% if step.detail %} <span class="muted">— {{ step.detail }}</span>{% endif %}{% if step.detik %} <span class="muted">({{ step.detik|int }} s)</span>{% endif %}</span>
+  </div>
+  {% endfor %}
+
+  {% if refresh %}<p class="muted">Halaman ini diperbarui otomatis. Boleh ditutup; proses tetap berjalan.</p>{% endif %}
+
+  {% if meta.status == 'gagal' %}
+  <p class="error">{{ meta.error }}</p>
+  <form method="post" action="{{ url_for('proses_ulang', job_id=meta.id) }}"><button class="secondary">Proses ulang</button></form>
+  {% endif %}
+</div>
+
+{% if meta.status in ('menunggu_nama', 'selesai') or (meta.status == 'gagal' and meta.speakers) %}
+<div class="card">
+  <h2>Nama pembicara</h2>
+  <p class="muted">Dengarkan contoh suara lalu ketik nama setiap pembicara. Nama dipakai sebagai peserta dan PIC di risalah.</p>
+  <form method="post" action="{{ url_for('simpan_nama', job_id=meta.id) }}">
+    {% for label, info in meta.speakers.items()|sort(attribute='1.porsi', reverse=true) %}
+    <div class="speaker">
+      <strong>{{ label }}</strong>
+      <span class="muted">· {{ (info.porsi * 100)|round|int }}% waktu bicara{% if info.gender %} · {{ info.gender|capitalize }}{% endif %}</span>
+      {% if info.contoh_kalimat %}<blockquote>“{{ info.contoh_kalimat }}”</blockquote>{% endif %}
+      {% if info.contoh_detik is defined %}
+      <audio controls preload="none" src="{{ url_for('berkas', job_id=meta.id, name='contoh/' ~ label ~ '.wav') }}"></audio>
+      {% endif %}
+      <label for="nama_{{ label }}">Nama</label>
+      <input type="text" id="nama_{{ label }}" name="nama_{{ label }}" value="{{ meta.names.get(label, '') }}" placeholder="mis. Budi Santoso">
+    </div>
+    {% endfor %}
+    <button type="submit">{% if meta.status == 'selesai' %}Perbarui risalah{% else %}Buat risalah ▶{% endif %}</button>
+  </form>
+</div>
+{% endif %}
+
+{% if files %}
+<div class="card">
+  <h2>Unduh</h2>
+  <ul>
+    {% for name, label in files.items() %}
+    <li><a href="{{ url_for('berkas', job_id=meta.id, name=name) }}">{{ label }}</a> <span class="muted">{{ name }}</span></li>
+    {% endfor %}
+  </ul>
+  {% if risalah_md %}
+  <h2>Pratinjau risalah</h2>
+  <pre class="risalah">{{ risalah_md }}</pre>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

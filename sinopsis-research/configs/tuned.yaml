@@ -1,0 +1,27 @@
+# Varian C — varian B (segmentation-3.0 + ECAPA-TDNN + AHC) dengan parameter
+# hasil grid search pada AMI dev (IS1008a–d, 95,7 menit). Lihat:
+#   results/grid_dev_baseline_b.csv  (grid 1: threshold 0,50–0,80 × masker VAD)
+#   results/grid_dev_wide.csv        (grid 2: threshold 0,60–1,00 × min_cluster_size × min_duration_off)
+#   results/grid_dev_fine.csv        (grid 3: min_duration_off 0,5–2,0)
+#
+# DER dev: default 7,18 % -> 5,87 % (collar 0,25 s per sisi).
+#
+# Pemilihan nilai: diambil dari TENGAH wilayah dengan DER minimum (bukan titik
+# minimum mutlak) agar tidak overfit pada 4 rapat dev yang berasal dari satu tim:
+#   threshold 0,80         DER minimum untuk 0,70–1,00 saat min_cluster_size >= 18
+#                          (>= 1,3 -> under-clustering, 4 pembicara terdeteksi 2)
+#   min_cluster_size 24    DER minimum untuk 18–30 (80 -> mulai under-clustering)
+#   min_duration_off 0,75  DER minimum 0,75–1,00 (>= 1,5 false alarm naik tajam)
+# Masker Silero VAD tidak dipakai: menaikkan miss 3,6 % -> 10,3 % (DER 12,3 %).
+name: tuned
+pipeline:
+  segmentation: pyannote/segmentation-3.0
+  embedding: speechbrain/spkrec-ecapa-voxceleb
+  clustering: AgglomerativeClustering
+params:
+  clustering:
+    method: centroid
+    threshold: 0.80
+    min_cluster_size: 24
+  segmentation:
+    min_duration_off: 0.75

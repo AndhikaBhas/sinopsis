@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% if refresh %}<meta http-equiv="refresh" content="4">{% endif %}
+  <title>{% block title %}Notulensi Otomatis{% endblock %}</title>
+  <style>
+    :root { --fg:#1f2933; --muted:#616e7c; --line:#e4e7eb; --bg:#f7f8fa; --accent:#1d4ed8; --ok:#15803d; --warn:#b45309; --err:#b91c1c; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color:var(--fg); background:var(--bg); }
+    header { background:#fff; border-bottom:1px solid var(--line); padding:12px 20px; }
+    header a { color:var(--fg); text-decoration:none; font-weight:600; }
+    main { max-width:880px; margin:24px auto; padding:0 16px; }
+    .card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:20px; margin-bottom:20px; }
+    h1 { font-size:20px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 12px; }
+    .muted { color:var(--muted); font-size:13px; }
+    label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; }
+    input[type=text], input[type=date], input[type=time], input[type=file] { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font:inherit; background:#fff; }
+    .row { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0 12px; }
+    button { margin-top:16px; padding:9px 18px; border:0; border-radius:6px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+    button.secondary { background:#fff; color:var(--fg); border:1px solid var(--line); }
+    table { width:100%; border-collapse:collapse; } td, th { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { font-size:12px; color:var(--muted); font-weight:600; }
+    a { color:var(--accent); }
+    .badge { display:inline-block; font-size:12px; padding:1px 8px; border-radius:99px; background:var(--line); }
+    .badge.selesai { background:#dcfce7; color:var(--ok); } .badge.gagal { background:#fee2e2; color:var(--err); }
+    .badge.menunggu_nama { background:#fef3c7; color:var(--warn); }
+    .step { display:flex; gap:10px; padding:6px 0; } .step .icon { width:18px; text-align:center; }
+    .step.selesai .icon { color:var(--ok); } .step.gagal .icon { color:var(--err); } .step.dilewati { color:var(--muted); }
+    .flash { background:#fee2e2; color:var(--err); padding:10px 14px; border-radius:6px; margin-bottom:16px; }
+    .speaker { border-top:1px solid var(--line); padding:14px 0; } .speaker:first-of-type { border-top:0; }
+    .speaker audio { width:100%; height:36px; margin-top:6px; }
+    blockquote { margin:6px 0; padding-left:10px; border-left:3px solid var(--line); color:var(--muted); font-style:italic; }
+    pre.risalah { white-space:pre-wrap; font:13px/1.5 ui-monospace, monospace; background:var(--bg); padding:14px; border-radius:6px; max-height:520px; overflow:auto; }
+    .error { color:var(--err); white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <header><a href="{{ url_for('index') }}">Notulensi Otomatis</a> <span class="muted">· lokal</span></header>
+  <main>
+    {% for message in get_flashed_messages() %}<div class="flash">{{ message }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h1>Rapat baru</h1>
+  <p class="muted">Unggah rekaman rapat. Sistem akan memisahkan pembicara, mentranskripsi, lalu menyusun draf risalah.</p>
+  <form method="post" action="{{ url_for('proses') }}" enctype="multipart/form-data">
+    <label for="judul">Agenda / judul rapat</label>
+    <input type="text" id="judul" name="judul" required placeholder="Evaluasi Pengadaan Q3">
+    <div class="row">
+      <div><label for="tanggal">Tanggal</label><input type="date" id="tanggal" name="tanggal"></div>
+      <div><label for="mulai">Mulai pukul</label><input type="time" id="mulai" name="mulai"></div>
+      <div><label for="tempat">Tempat</label><input type="text" id="tempat" name="tempat" placeholder="Ruang Rapat Lt. 3"></div>
+    </div>
+    <label for="audio">Rekaman audio ({{ extensions|join(', ') }})</label>
+    <input type="file" id="audio" name="audio" accept="{{ extensions|join(',') }},audio/*" required>
+    <button type="submit">Proses ▶</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Riwayat</h2>
+  {% if jobs %}
+  <table>
+    <tr><th>Agenda</th><th>Tanggal</th><th>Durasi</th><th>Status</th></tr>
+    {% for job in jobs %}
+    <tr>
+      <td><a href="{{ url_for('rapat', job_id=job.id) }}">{{ job.judul }}</a></td>
+      <td>{{ job.tanggal or job.dibuat[:10] }}</td>
+      <td>{{ job.durasi_detik|menit if job.durasi_detik else '-' }}</td>
+      <td><span class="badge {{ job.status }}">{{ job.status|replace('_', ' ') }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">Belum ada rapat yang diproses.</p>
+  {% endif %}
+</div>
+{% endblock %}

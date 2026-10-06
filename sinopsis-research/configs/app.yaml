@@ -1,0 +1,38 @@
+# Konfigurasi aplikasi notulensi (web & CLI).
+
+# Varian diarization yang dipakai aplikasi (hasil penelitian: varian C).
+diarization: configs/tuned.yaml
+
+# Bandpass + normalisasi sebelum diarization (Bab 3.2.1).
+# Default false: varian C dievaluasi TANPA preprocessing; aktifkan setelah
+# pengaruhnya pada DER dievaluasi.
+preprocess: false
+
+# Proses per potongan + cross-segment tracking (Bab 3.2.2).
+# Default false: varian C dievaluasi pada audio utuh.
+segmented: false
+tracking_threshold: 0.85
+
+# Model klasifikasi gender (scripts/train_gender.py). Dilewati jika belum ada.
+gender_model: models/gender_mlp.joblib
+
+asr:
+  model: medium
+  language: id
+  compute_type: int8   # CPU. Untuk GPU: float16
+  batch_size: 8
+  align: true
+
+llm:
+  host: http://127.0.0.1:11434
+  model: gemma2:2b
+  num_ctx: 8192
+  temperature: 0.2
+  chunk_words: 1200
+
+risalah:
+  kop: ["RISALAH RAPAT"]          # mis. ["PT PAL Indonesia", "RISALAH RAPAT"]
+  penanda_tangan: ["Dibuat Oleh", "Diperiksa Oleh", "Disetujui Oleh"]
+  sertakan_transkrip: true
+
+hasil_dir: hasil

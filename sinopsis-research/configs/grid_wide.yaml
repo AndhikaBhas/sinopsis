@@ -1,0 +1,10 @@
+# Grid lanjutan: optimum grid pertama (0,80) jatuh di batas atas rentang
+# proposal (0,5–0,8), jadi rentang diperluas untuk memastikan titik minimum.
+# Masker VAD tidak diikutkan karena terbukti menaikkan DER (lihat grid_dev).
+pipeline:
+  clustering.threshold: [0.60, 0.65, 0.70, 0.7045654963945799, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00]
+  clustering.min_cluster_size: [6, 12, 18]
+  segmentation.min_duration_off: [0.0, 0.25, 0.5]
+
+vad:
+  threshold: [null]

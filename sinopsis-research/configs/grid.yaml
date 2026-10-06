@@ -1,0 +1,20 @@
+# Ruang pencarian Grid Search (Bab 3.3.1 proposal).
+#
+# pipeline: parameter pyannote, ditulis "bagian.parameter".
+#   clustering.threshold      distance threshold AHC (proposal: 0,5 – 0,8)
+#   clustering.min_cluster_size  cluster lebih kecil dari ini digabung ke cluster terdekat
+#   segmentation.min_duration_off  jeda lebih pendek dari ini diisi (detik)
+#
+# vad: parameter Silero VAD sebagai masker hasil diarization.
+#   threshold null  = tanpa masker VAD (perilaku pyannote murni)
+#   min_speech_duration: proposal 0,2 – 0,5 detik
+pipeline:
+  # 0.7045654963945799 = default pyannote 3.1 (pembanding "tanpa tuning")
+  clustering.threshold: [0.50, 0.55, 0.60, 0.65, 0.70, 0.7045654963945799, 0.75, 0.80]
+  clustering.min_cluster_size: [12]
+  segmentation.min_duration_off: [0.0]
+
+vad:
+  threshold: [null, 0.3, 0.4, 0.5, 0.6]
+  min_speech_duration: [0.2, 0.3, 0.4, 0.5]
+  min_silence_duration: [0.1]
