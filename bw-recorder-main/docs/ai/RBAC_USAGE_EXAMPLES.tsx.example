@@ -1,0 +1,250 @@
+// Example: How to add RBAC to your existing routes
+
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import { redirect } from "react-router";
+import { getCurrentUser } from "~/lib/auth.server";
+import { requirePermission, hasPermission, getUserPermissions } from "~/lib/rbac.server";
+
+// ============================================
+// EXAMPLE 1: Simple permission check in loader
+// ============================================
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getCurrentUser(request);
+  
+  // Redirect to login if not authenticated
+  if (!user) {
+    return redirect("/login");
+  }
+  
+  // Check if user has permission to view analytics
+  // Throws 403 if user doesn't have permission
+  await requirePermission(user, "analytics.view");
+  
+  // If we get here, user has permission
+  const analyticsData = await getAnalytics();
+  
+  return { analyticsData };
+}
+
+// ============================================
+// EXAMPLE 2: Check permission with context (rules)
+// ============================================
+export async function loader({ request, params }: LoaderFunctionArgs) {
+  const user = await getCurrentUser(request);
+  
+  if (!user) {
+    return redirect("/login");
+  }
+  
+  // Get the meeting
+  const meeting = await getMeeting(params.id);
+  
+  // Check if user can view this specific meeting
+  // This will evaluate any rules attached to "meeting.view.own" permission
+  // For example, a rule that checks if user owns the meeting
+  await requirePermission(user, "meeting.view.own", {
+    userId: user.id,
+    resourceId: meeting.id,
+    resourceOwnerId: meeting.createdBy, // Assuming meeting has createdBy field
+  });
+  
+  return { meeting };
+}
+
+// ============================================
+// EXAMPLE 3: Check multiple permissions (any/all)
+// ============================================
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getCurrentUser(request);
+  
+  if (!user) {
+    return redirect("/login");
+  }
+  
+  // Get all user permissions to pass to UI
+  const permissions = await getUserPermissions(user.id);
+  
+  // Check if user can view either their own meetings OR all meetings
+  const canViewOwn = await hasPermission(user.id, "meeting.view.own");
+  const canViewAll = await hasPermission(user.id, "meeting.view.all");
+  
+  if (!canViewOwn && !canViewAll) {
+    throw new Response("Forbidden", { status: 403 });
+  }
+  
+  // Fetch meetings based on permission level
+  const meetings = canViewAll 
+    ? await getAllMeetings()
+    : await getUserMeetings(user.id);
+  
+  return { meetings, permissions };
+}
+
+// ============================================
+// EXAMPLE 4: Action with permission check
+// ============================================
+export async function action({ request, params }: ActionFunctionArgs) {
+  const user = await getCurrentUser(request);
+  
+  if (!user) {
+    return redirect("/login");
+  }
+  
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+  
+  if (intent === "delete") {
+    // Get the meeting to check ownership
+    const meeting = await getMeeting(params.id);
+    
+    // Check if user can delete this meeting
+    // This checks both the permission AND any rules (like ownership)
+    await requirePermission(user, "meeting.delete.own", {
+      userId: user.id,
+      resourceOwnerId: meeting.createdBy,
+    });
+    
+    // If we get here, user has permission to delete
+    await deleteMeeting(meeting.id);
+    
+    return redirect("/meetings");
+  }
+  
+  if (intent === "edit") {
+    const meeting = await getMeeting(params.id);
+    
+    // Check edit permission
+    await requirePermission(user, "meeting.edit.own", {
+      userId: user.id,
+      resourceOwnerId: meeting.createdBy,
+    });
+    
+    const title = formData.get("title") as string;
+    const description = formData.get("description") as string;
+    
+    await updateMeeting(meeting.id, { title, description });
+    
+    return { success: true };
+  }
+  
+  return { error: "Invalid intent" };
+}
+
+// ============================================
+// EXAMPLE 5: Conditional UI based on permissions
+// ============================================
+import { useLoaderData } from "react-router";
+import { Button } from "~/components/ui/button";
+
+export default function MeetingDetail() {
+  const { meeting, permissions } = useLoaderData<typeof loader>();
+  
+  // Check permissions in UI to conditionally render elements
+  const canEdit = permissions.includes("meeting.edit.own") || permissions.includes("meeting.edit.all");
+  const canDelete = permissions.includes("meeting.delete.own") || permissions.includes("meeting.delete.all");
+  const canViewAnalytics = permissions.includes("analytics.view");
+  
+  return (
+    <div className="space-y-4">
+      <h1>{meeting.title}</h1>
+      <p>{meeting.description}</p>
+      
+      <div className="flex gap-2">
+        {canEdit && (
+          <Button>Edit Meeting</Button>
+        )}
+        
+        {canDelete && (
+          <Button variant="destructive">Delete Meeting</Button>
+        )}
+        
+        {canViewAnalytics && (
+          <Button variant="outline">View Analytics</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// EXAMPLE 6: Advanced rule context
+// ============================================
+export async function action({ request, params }: ActionFunctionArgs) {
+  const user = await getCurrentUser(request);
+  
+  if (!user) {
+    return redirect("/login");
+  }
+  
+  const meeting = await getMeeting(params.id);
+  
+  // Complex context for rule evaluation
+  await requirePermission(user, "meeting.edit.own", {
+    userId: user.id,
+    resourceId: meeting.id,
+    resourceOwnerId: meeting.createdBy,
+    resourceStatus: meeting.status, // e.g., "draft", "published", "archived"
+    userDepartment: user.department, // If you have department field
+    currentHour: new Date().getHours(), // For time-based rules
+  });
+  
+  // Proceed with action...
+}
+
+// ============================================
+// EXAMPLE 7: Protect entire route tree
+// ============================================
+// In your route configuration or layout
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getCurrentUser(request);
+  
+  // Require authentication for entire admin section
+  if (!user) {
+    throw redirect("/login");
+  }
+  
+  // Require admin permissions
+  const hasAdminAccess = await hasPermission(user.id, "settings.manage");
+  
+  if (!hasAdminAccess) {
+    throw new Response("Forbidden - Admin access required", { status: 403 });
+  }
+  
+  // Get user permissions for child routes
+  const permissions = await getUserPermissions(user.id);
+  
+  return { user, permissions };
+}
+
+// ============================================
+// HELPER FUNCTIONS (add these to your codebase)
+// ============================================
+
+// Mock functions - replace with your actual database calls
+async function getMeeting(id: string | number) {
+  // Your database call
+  return { id, title: "Example Meeting", createdBy: 1, status: "draft" };
+}
+
+async function getAllMeetings() {
+  // Your database call
+  return [];
+}
+
+async function getUserMeetings(userId: number) {
+  // Your database call
+  return [];
+}
+
+async function getAnalytics() {
+  // Your analytics logic
+  return {};
+}
+
+async function deleteMeeting(id: number | string) {
+  // Your delete logic
+}
+
+async function updateMeeting(id: number | string, data: any) {
+  // Your update logic
+}

@@ -1,0 +1,8 @@
+# Pip constraints file
+# 
+# This file excludes packages that cause issues with our setup
+# Use with: pip install -c constraints.txt -r requirements.txt
+
+# CRITICAL: torchcodec 0.8.0 causes std::bad_alloc with PyTorch 2.8.0+cu128
+# PyAnnote works fine without it (only needed for video decoding)
+torchcodec==999.0.0  # This version doesn't exist, so pip will skip it

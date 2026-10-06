@@ -1,0 +1,134 @@
+┌─────────────────────────────────────────────────────────────────────┐
+│          std::bad_alloc Fix - 128GB RAM System Cheat Sheet         │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ THE PROBLEM                                                         │
+└─────────────────────────────────────────────────────────────────────┘
+  Error:    terminate called after throwing an instance of 
+            'std::bad_alloc'
+  
+  Reality:  You have 128GB RAM - this is NOT a memory shortage!
+  
+  Cause:    Linux virtual memory limits & overcommit policies
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ QUICK FIXES (Choose One)                                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+  1. ONE-LINE FIX (Immediate)
+     ┌─────────────────────────────────────────────────────────────┐
+     │ ulimit -v unlimited && ulimit -s unlimited && python main.py│
+     └─────────────────────────────────────────────────────────────┘
+
+  2. WRAPPER SCRIPT (Recommended) ⭐
+     ┌─────────────────────────────────────────────────────────────┐
+     │ chmod +x run_with_memory_fix.sh                             │
+     │ ./run_with_memory_fix.sh                                    │
+     └─────────────────────────────────────────────────────────────┘
+
+  3. WITH SUDO (Best - fixes system settings)
+     ┌─────────────────────────────────────────────────────────────┐
+     │ sudo ./run_with_memory_fix.sh                               │
+     └─────────────────────────────────────────────────────────────┘
+
+  4. DIAGNOSE FIRST (Recommended if unsure)
+     ┌─────────────────────────────────────────────────────────────┐
+     │ python diagnose_memory.py                                   │
+     └─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ VERIFICATION COMMANDS                                                │
+└─────────────────────────────────────────────────────────────────────┘
+
+  Check virtual memory limit:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ ulimit -v                                                        │
+  │ # Should show "unlimited"                                        │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Check overcommit policy:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ cat /proc/sys/vm/overcommit_memory                               │
+  │ # Should be 0 or 1 (NOT 2)                                       │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Check available RAM:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ free -h                                                          │
+  └─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ WHAT THE WRAPPER SCRIPT DOES                                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+  ✓ Removes all memory limits (ulimit -v, -s, -d unlimited)
+  ✓ Sets PYTORCH_CUDA_ALLOC_CONF for high-RAM systems
+  ✓ Configures C++ memory allocator (MALLOC_ARENA_MAX=2)
+  ✓ Uses 8 threads (optimal for your system)
+  ✓ Loads jemalloc if available
+  ✓ Sets vm.overcommit_memory=1 (if root)
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ IF STILL FAILING                                                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+  Try with jemalloc (better memory allocator):
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ sudo apt install libjemalloc2                                    │
+  │ LD_PRELOAD=libjemalloc.so.2 ./run_with_memory_fix.sh            │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Check kernel messages:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ dmesg | grep -i "memory\|alloc"                                  │
+  └─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ PERMANENT FIX (Optional)                                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+  Add to /etc/security/limits.conf:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ * soft as unlimited                                              │
+  │ * hard as unlimited                                              │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Add to /etc/sysctl.conf:
+  ┌─────────────────────────────────────────────────────────────────┐
+  │ vm.overcommit_memory = 1                                         │
+  └─────────────────────────────────────────────────────────────────┘
+
+  Then: sudo sysctl -p && logout (and login again)
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ DOCUMENTATION                                                       │
+└─────────────────────────────────────────────────────────────────────┘
+
+  Detailed Guide:  docs/FIX_HIGH_RAM_SYSTEMS.md
+  Complete Guide:  docs/128GB_RAM_FIX.md
+  Quick Ref:       MEMORY_FIX_QUICKREF.md
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ EXPECTED RESULT                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+
+  After fix, you should see in logs:
+  
+  ✓ High-RAM system detected (128.0GB)
+  ✓ Set PYTORCH_CUDA_ALLOC_CONF=...
+  ✓ Set MALLOC_ARENA_MAX=2
+  ✓ PyAnnote pipeline initialized successfully
+  
+  Memory usage: ~3-5GB (out of your 128GB)
+  Startup time: 2-5 minutes (normal for model loading)
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ REMEMBER                                                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+  The problem is NOT your 128GB RAM.
+  The problem is Linux won't LET the program use it.
+  The fix tells Linux: "It's okay, we have plenty!"
+
+  Just run: ./run_with_memory_fix.sh

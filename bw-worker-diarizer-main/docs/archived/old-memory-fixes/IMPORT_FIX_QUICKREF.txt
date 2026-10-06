@@ -1,0 +1,49 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║           std::bad_alloc DURING PYANNOTE IMPORT - QUICK FIX               ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+ERROR LOCATION: During "from pyannote.audio import Pipeline"
+ROOT CAUSE:     Linux kernel memory overcommit setting is too strict
+
+┌─ ONE-LINE FIX (Run as root) ────────────────────────────────────────────────┐
+│ $ sudo bash fix-pyannote-import.sh                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ OR MANUALLY ───────────────────────────────────────────────────────────────┐
+│ # Fix overcommit (CRITICAL - this is the main issue)                       │
+│ $ sudo sysctl -w vm.overcommit_memory=1                                    │
+│                                                                             │
+│ # Install jemalloc (better memory allocator)                               │
+│ $ sudo apt-get install -y libjemalloc2                                     │
+│                                                                             │
+│ # Use jemalloc when running Python                                         │
+│ $ export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2             │
+│ $ python verify_fix.py                                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ VERIFY THE FIX ────────────────────────────────────────────────────────────┐
+│ $ export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2             │
+│ $ python3 -c "from pyannote.audio import Pipeline; print('✅ SUCCESS!')"   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ WHAT EACH FIX DOES ────────────────────────────────────────────────────────┐
+│ vm.overcommit_memory=1  → Allows memory overcommit (was blocking it)       │
+│ jemalloc                → Better allocator, prevents fragmentation         │
+│ LD_PRELOAD              → Forces Python to use jemalloc instead of glibc   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ WHY THIS HAPPENS ──────────────────────────────────────────────────────────┐
+│ • PyAnnote imports heavy PyTorch/NumPy components                          │
+│ • Linux kernel may refuse allocation if overcommit_memory=2 (strict)       │
+│ • glibc malloc fragments memory, causing allocation failures               │
+│ • jemalloc handles fragmentation better                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ DETAILED DOCS ─────────────────────────────────────────────────────────────┐
+│ IMPORT_FIX_GUIDE.md     → Complete troubleshooting guide                   │
+│ fix-pyannote-import.sh  → Automated fix script                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║  After applying fixes, the import should work without std::bad_alloc      ║
+╚════════════════════════════════════════════════════════════════════════════╝

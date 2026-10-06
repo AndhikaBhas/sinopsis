@@ -1,0 +1,22 @@
+# Core dependencies
+python-dotenv==1.1.1
+pika==1.3.2
+psycopg2-binary==2.9.10
+minio==7.2.18
+
+# Audio processing and diarization
+pyannote.audio==4.0.1
+torch>=2.0.0,<2.9.0
+torchaudio>=2.0.0,<2.9.0
+soundfile>=0.12.1
+librosa>=0.10.0,<0.12.0
+pydub>=0.25.1
+
+# CRITICAL: Exclude torchcodec - causes std::bad_alloc with PyTorch 2.8.0+cu128
+# PyAnnote works fine without it (only needed for video, we use audio only)
+
+# Utilities
+numpy>=1.24.0,<3.0.0
+
+# Logging
+structlog==25.4.0

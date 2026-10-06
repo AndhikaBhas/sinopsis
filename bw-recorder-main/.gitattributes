@@ -1,0 +1,6 @@
+# Documentation files
+docs/ai/** linguist-documentation=true
+docs/ALUR_PEMROSESAN_AUDIO.md linguist-documentation=true
+
+# Mark AI docs for tracking
+docs/ai/**.md ai-generated=true

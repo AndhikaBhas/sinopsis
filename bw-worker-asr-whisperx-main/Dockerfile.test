@@ -1,0 +1,8 @@
+FROM ubuntu:22.04
+
+ARG ASR_MODEL=tiny
+ARG ASR_LANGUAGE=id
+
+RUN echo "Model: ${ASR_MODEL}" &&     echo "Language: ${ASR_LANGUAGE}" &&     test -n "${ASR_MODEL}" || (echo "ERROR: ASR_MODEL is empty" && exit 1) &&     test -n "${ASR_LANGUAGE}" || (echo "ERROR: ASR_LANGUAGE is empty" && exit 1) &&     echo "✅ Build arguments are working correctly"
+
+CMD ["echo", "Test passed"]

@@ -1,0 +1,17 @@
+# Binaries
+/target/
+
+# Environment files
+.env
+
+# IDE settings
+.vscode/
+.idea/
+
+# Logs and temp
+*.log
+/tmp/
+.DS_Store
+
+# Docker artifacts
+*.tar

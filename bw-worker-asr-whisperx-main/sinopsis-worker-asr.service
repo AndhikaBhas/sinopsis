@@ -1,0 +1,39 @@
+[Unit]
+Description=Sinopsis ASR Worker Service
+After=network.target rabbitmq-server.service postgresql.service
+Wants=network.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=syauqi
+Group=syauqi
+WorkingDirectory=/opt/sinopsis-worker-asr
+# Set PATH to include venv and system binaries (needed for ffmpeg, etc.)
+Environment=PATH=/opt/sinopsis-worker-asr/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=TMPDIR=/opt/sinopsis-worker-asr/temp
+Environment=TEMP=/opt/sinopsis-worker-asr/temp
+Environment=TMP=/opt/sinopsis-worker-asr/temp
+# Load .env file if it exists
+EnvironmentFile=-/opt/sinopsis-worker-asr/.env
+# Use absolute paths for ExecStart
+ExecStart=/opt/sinopsis-worker-asr/venv/bin/python /opt/sinopsis-worker-asr/worker.py
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sinopsis-worker-asr
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=false
+ReadWritePaths=/opt/sinopsis-worker-asr
+
+# Resource limits
+LimitNOFILE=65536
+#MemoryMax=8G
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,191 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+  generatedFileExtension = "ts"
+  importFileExtension = "ts"
+  moduleFormat = "esm"
+  runtime = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model rapat {
+  id                  Int           @id(map: "pk_rapat") @default(autoincrement())
+  judul               String        @db.VarChar
+  tempat_rapat        String?       @db.VarChar
+  lokasi_file_audio   String?       @db.VarChar
+  nama_file_audio     String?       @db.VarChar
+  transkrip           Json?
+  ringkasan           String?
+  status_rapat        Int           @default(0) @db.SmallInt
+  diarisasi           Json?
+  diarisasi_transkrip Json?
+  tanggal             DateTime?     @db.Date
+  rapat_chunk         rapat_chunk[]
+
+  @@index([status_rapat])
+  @@index([id(sort: Desc)])
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model rapat_chunk {
+  id                Int     @id(map: "pk_rapat_sesi_chunk") @default(autoincrement())
+  urutan_chunk      Int
+  lokasi_file_audio String? @db.VarChar
+  nama_file_audio   String? @db.VarChar
+  transkrip         Json?
+  rapat_id          Int
+  rapat             rapat   @relation(fields: [rapat_id], references: [id], onDelete: Cascade, map: "fk_rapat_chunk_rapat_id_ke_rapat_id")
+}
+
+model User {
+  id              Int              @id(map: "pk_user") @default(autoincrement())
+  email           String           @unique @db.VarChar
+  name            String?          @db.VarChar
+  hashedPassword  String           @db.VarChar
+  createdAt       DateTime         @default(now())
+  approved        Boolean          @default(false)
+  updatedAt       DateTime         @default(now()) @updatedAt
+  userPermissions UserPermission[]
+  userRoles       UserRole[]
+
+  @@map("users")
+}
+
+model Role {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(100)
+  displayName     String           @db.VarChar(255)
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  childRoles      RoleHierarchy[]  @relation("ChildRole")
+  parentRoles     RoleHierarchy[]  @relation("ParentRole")
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("roles")
+}
+
+model Permission {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique @db.VarChar(100)
+  resource        String           @db.VarChar(50)
+  action          String           @db.VarChar(50)
+  displayName     String           @db.VarChar(255)
+  description     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  rules           Rule[]
+  userPermissions UserPermission[]
+
+  @@index([resource, action])
+  @@index([isActive])
+  @@map("permissions")
+}
+
+model Rule {
+  id           Int        @id @default(autoincrement())
+  permissionId Int
+  name         String     @db.VarChar(100)
+  description  String?
+  conditions   Json
+  effect       String     @db.VarChar(20)
+  priority     Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@index([permissionId])
+  @@index([isActive, priority])
+  @@map("rules")
+}
+
+model UserRole {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  roleId    Int
+  grantedAt DateTime  @default(now())
+  grantedBy Int?
+  expiresAt DateTime?
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([expiresAt])
+  @@map("user_roles")
+}
+
+model UserPermission {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  permissionId Int
+  grantedAt    DateTime   @default(now())
+  grantedBy    Int?
+  expiresAt    DateTime?
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([expiresAt])
+  @@map("user_permissions")
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  grantedAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model RoleHierarchy {
+  id           Int      @id @default(autoincrement())
+  parentRoleId Int
+  childRoleId  Int
+  createdAt    DateTime @default(now())
+  childRole    Role     @relation("ChildRole", fields: [childRoleId], references: [id], onDelete: Cascade)
+  parentRole   Role     @relation("ParentRole", fields: [parentRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([parentRoleId, childRoleId])
+  @@index([parentRoleId])
+  @@index([childRoleId])
+  @@map("role_hierarchies")
+}
+
+model upload_job {
+  id            String    @id @default(uuid()) @db.Uuid
+  rapat_id      Int
+  file_name     String    @db.VarChar
+  file_size     Int
+  file_type     String    @db.VarChar
+  temp_path     String    @db.VarChar
+  status        String    @default("pending") @db.VarChar
+  progress      Int       @default(0) @db.SmallInt
+  error_message String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  completed_at  DateTime?
+
+  @@index([status, created_at])
+  @@index([rapat_id])
+}
